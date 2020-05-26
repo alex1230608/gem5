@@ -1,0 +1,4 @@
+
+mount /dev/sdb1 /mnt
+/myBinaries/kvs /myBinaries/src/kvs/workload/read_sharded_r100_i2.txt
+/sbin/m5 exit

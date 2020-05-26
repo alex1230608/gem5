@@ -1,0 +1,38 @@
+Loading new script...
+[   43.388369] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[   43.416619] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P1074
+[   43.434716] 	(detected by 0, t=5267 jiffies, g=-224, c=-225, q=4)
+[  124.295636] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  124.322333] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P1076
+[  124.340230] 	(detected by 0, t=5264 jiffies, g=-208, c=-209, q=4)
+[  144.529390] EXT4-fs error (device sda1): ext4_mb_generate_buddy:746: group 0, block bitmap and bg descriptor inconsistent: 29483 vs 29256 free clusters
+[  145.673793] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  145.698037] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P826
+[  145.715684] 	(detected by 1, t=5252 jiffies, g=-207, c=-208, q=8)
+[  420.870220] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  420.900923] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P1085
+[  420.918920] 	(detected by 1, t=5252 jiffies, g=-78, c=-79, q=9)
+[  513.140539] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  513.166234] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P826
+[  513.183781] 	(detected by 1, t=5252 jiffies, g=-62, c=-63, q=2)
+[  565.622571] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  565.647266] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P1079
+[  565.665113] 	(detected by 2, t=5264 jiffies, g=-59, c=-60, q=1)
+[  655.514690] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  655.540435] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P826
+[  655.558032] 	(detected by 0, t=5264 jiffies, g=-55, c=-56, q=4)
+[  774.687923] INFO: rcu_preempt detected stalls on CPUs/tasks:
+[  774.713124] 	Tasks blocked on level-0 rcu_node (CPUs 0-2): P826
+[  774.730696] 	(detected by 2, t=5265 jiffies, g=-46, c=-47, q=12)
+GET http://journalseek.net/ HTTP/1.1
+
+Host: journalseek.net
+
+Accept: */*
+
+Pragma: no-cache
+
+User-Agent: Mozilla/4.0 (compatible; MSIE 4.01; Windows 95)
+
+
+

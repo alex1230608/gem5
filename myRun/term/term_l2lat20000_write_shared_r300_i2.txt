@@ -1,0 +1,5 @@
+Loading new script...
+[   12.503618] EXT4-fs error (device sda1): ext4_mb_generate_buddy:746: group 0, block bitmap and bg descriptor inconsistent: 29483 vs 29256 free clusters
+start_time: 15991178
+end_time: 23677733
+elapsed: 7686555

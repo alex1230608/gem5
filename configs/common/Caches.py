@@ -74,6 +74,10 @@ class L2Cache(Cache):
     mshrs = 20
     tgts_per_mshr = 12
     write_buffers = 8
+    def set_lat(self, lat=20):
+        self.tag_latency=lat
+        self.data_latency=lat
+        self.response_latency=lat
 
 class IOCache(Cache):
     assoc = 8
