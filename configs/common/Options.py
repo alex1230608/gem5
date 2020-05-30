@@ -136,6 +136,7 @@ def addNoISAOptions(parser):
     parser.add_option("--l3_assoc", type="int", default=16)
     parser.add_option("--cacheline_size", type="int", default=64)
     parser.add_option("--l2_lat", type="int", default=20)
+    parser.add_option("--l1_lat", type="int", default=2)
 
     # Enable Ruby
     parser.add_option("--ruby", action="store_true")

@@ -3,18 +3,9 @@
 root="/home/kuofeng/myGitRepos/gem5"
 cd $root
 
-#rw="read"
-#sharded="sharded"
-#sharded_txt="sharded"
-#r="300"
-#i="2"
 
-rws="read write"
-shardeds="shared sharded"
-rs="300"
-is="2"
-lats="2000 5000 10000 20000 50000 100000"
 get_result=1
+distr="rackout"
 
 #find available output direcotry
 thread=0
@@ -28,6 +19,15 @@ cp tmp/output tmp/output$thread -r
 if [ $get_result -eq 1 ]; then
 	echo "" > ./myRun/result.txt
 fi
+
+if [ "$distr" = "simple" ]; then
+
+# For simple distr
+rws="read write"
+shardeds="shared sharded"
+rs="300"
+is="2"
+lats="10 2000 5000 10000 20000 50000"
 
 for rw in $rws
 do
@@ -59,6 +59,74 @@ do
     done
   done
 done
+
+elif [ "$distr" = "rackout" ]; then
+
+# For rackout distr
+
+# workload parameters
+alphas="0.990"
+#rrs="0.000 0.950 0.990 1.000"
+rrs="0.000 1.000"
+#shardeds="shared sharded"
+shardeds="shared"
+rs="1200"
+#is="32768"
+is="1"
+#lats="2000 3000 4000 5000 10000 20000 30000 40000 50000"
+nCores="1 2 4 6 8" # the number of cores are always 9; this is more about cores used by NIC threads
+
+# system parameters
+sys_clock="500MHz"
+cpu_clock="633MHz"
+l1_lat="60"
+l2_lats="125 250 500 1000"
+l1d_size="64kB"
+l1i_size="1MB"
+l2_size="2MB"
+#l1d_size="32MB"
+#l2_size="1GB"
+
+
+
+for alpha in $alphas
+do
+  for rr in $rrs
+  do
+    for r in $rs
+    do
+      for i in $is
+      do
+        for nCore in $nCores
+        do
+          for sharded in $shardeds
+          do
+		sudo python ./myRun/generate_test_rcs.py --distr $distr --alpha $alpha --read-ratio $rr --sharded $sharded --repeat $r --test-range $i -n $nCore
+		test=${distr}_n${nCore}_a${alpha}_rr${rr}_${sharded}_r${r}_i${i}
+		for l2_lat in $l2_lats
+		do
+			stats_file="myRun/stats/stats_${test}_clk${cpu_clock}_l2lat${l2_lat}.txt"
+			term_file="myRun/term/term_${test}_clk${cpu_clock}_l2lat${l2_lat}.txt"
+			if [ ! -f $term_file ]; then
+				echo "" > $term_file
+				build/ARM/gem5.opt -d tmp/output$thread configs/example/fs.py --kernel=./myFullSystemImages/fromGem5Website/binaries/vmlinux.arm64 --bootloader=./myFullSystemImages/fromGem5Website/binaries/boot.arm64 --disk-image=./myFullSystemImages/fromGem5Website/disks/aarch64-ubuntu-trusty-headless.img --disk-image=./myFullSystemImages/fromGem5Website/disks/aarch64-ubuntu-trusty-headless.img --mem-size=16GB --caches --l2cache --cpu-type=TimingSimpleCPU --script=./myScripts/test_${test}.rcS -r 1 --sys-clock $sys_clock --cpu-clock $cpu_clock -n 9 --l1_lat $l1_lat --l2_lat $l2_lat --l1i_size $l1i_size --l1d_size $l1d_size --l2_size $l2_size
+				cp tmp/output$thread/stats.txt $stats_file
+				cp tmp/output$thread/system.terminal $term_file
+			fi
+	
+			if [ $get_result -eq 1 ]; then
+				python ./myRun/extract_result.py --distr $distr --lat $l2_lat --alpha $alpha --read-ratio $rr --sharded $sharded --repeat $r --test-range $i -n $nCore --term-file $term_file >> ./myRun/result.txt
+				#python ./myRun/extract_result.py >> ./myRun/result.txt
+			fi
+        	done
+          done
+	done
+      done
+    done
+  done
+done
+
+fi
 
 rm tmp/busy$thread
 rm tmp/output$thread -r

@@ -57,6 +57,10 @@ class L1Cache(Cache):
     response_latency = 2
     mshrs = 4
     tgts_per_mshr = 20
+    def set_lat(self, lat=2):
+        self.tag_latency=lat
+        self.data_latency=lat
+        self.response_latency=lat
 
 class L1_ICache(L1Cache):
     is_read_only = True

@@ -125,6 +125,9 @@ def config_cache(options, system):
             dcache = dcache_class(size=options.l1d_size,
                                   assoc=options.l1d_assoc)
 
+            icache.set_lat(options.l1_lat)
+            dcache.set_lat(options.l1_lat)
+
             # If we have a walker cache specified, instantiate two
             # instances here
             if walk_cache_class:
