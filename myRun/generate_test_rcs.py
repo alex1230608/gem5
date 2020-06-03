@@ -7,6 +7,7 @@ import random
 root="/home/kuofeng/myGitRepos/gem5"
 
 parser = argparse.ArgumentParser(description='Generate test rcs files')
+parser.add_argument('--prefix', action="store", required=True)
 parser.add_argument('--distr', choices=['simple','rackout'], required=True)
 parser.add_argument('--sharded', choices=['shared','sharded'], required=True)
 parser.add_argument('--test-range', type=int, action="store", required=True)
@@ -33,9 +34,9 @@ elif args.distr == "rackout":
 		exit()
 
 if args.distr == "simple":
-	test_name="%s_n%d_%s_%s_r%d_i%d"%(args.distr, args.n, args.rw, args.sharded, args.repeat, args.test_range)
+	test_name="%s_%s_n%d_%s_%s_r%d_i%d"%(args.prefix, args.distr, args.n, args.rw, args.sharded, args.repeat, args.test_range)
 elif args.distr == "rackout":
-	test_name="%s_n%d_a%.3f_rr%.3f_%s_r%d_i%d"%(args.distr, args.n, args.alpha, args.read_ratio, args.sharded, args.repeat, args.test_range)
+	test_name="%s_%s_n%d_a%.3f_rr%.3f_%s_r%d_i%d"%(args.prefix, args.distr, args.n, args.alpha, args.read_ratio, args.sharded, args.repeat, args.test_range)
 
 content="""
 mount /dev/sdb1 /mnt

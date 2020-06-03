@@ -1,5 +1,6 @@
 #include <stdio.h> 
 #include <stdlib.h> 
+#include <stdint.h>
 #include <unistd.h> //Header file for sleep(). man 3 sleep for details. 
 #include <string.h>
 #include <pthread.h> 
@@ -7,15 +8,16 @@
 #include <sys/time.h>
 
 #define KEY_RANGE 268435456
+//#define KEY_RANGE 1
 #define ENTRY_SIZE 32
-#define NIC_NUM 2
-#define SEPERATE 10000 // NIC0: 0~TEST_RANGE, NIC1: SEPERATE~(SEPERATE+TEST_RANGE)
-#define TEST_RANGE 2
-#define TEST_REPEAT 300
-#define INTERVAL 1
-#define SHARDED false
-#define READ true
-#define WRITE true
+
+//#define SEPERATE 10000 // NIC0: 0~TEST_RANGE, NIC1: SEPERATE~(SEPERATE+TEST_RANGE)
+//#define TEST_RANGE 2
+//#define TEST_REPEAT 300
+//#define INTERVAL 1
+//#define SHARDED false
+//#define READ true
+//#define WRITE true
 
 #define LOG_LEVEL 1 // 0: print all, higher print less
 
@@ -23,7 +25,7 @@
             do { if (level > LOG_LEVEL) fprintf(stdout, fmt, ##__VA_ARGS__); } while (0)
 
 typedef struct Entry{
-	char value[ENTRY_SIZE];
+	uint64_t value[ENTRY_SIZE/8];
 } Entry;
 
 Entry *array;;
@@ -32,11 +34,30 @@ typedef struct ThreadArgv{
 	int tid;
 } ThreadArgv;
 
-char* read(int i){
-	return array[i].value;
+void copy(Entry *src, Entry *dst) {
+	dst->value[0] = src->value[0];
+	dst->value[1] = src->value[1];
+	dst->value[2] = src->value[2];
+	dst->value[3] = src->value[3];
 }
-void write(int i, const char *v){
-	strcpy(array[i].value, v);
+void inc(Entry *e) {
+	e->value[0] += 1;
+	e->value[1] += 1;
+	e->value[2] += 1;
+	e->value[3] += 1;
+}
+uint64_t* read(Entry *e){
+	e->value[0];
+	e->value[1];
+	e->value[2];
+	e->value[3];
+	return e->value;
+}
+void write(Entry *e, const uint64_t *v){
+	e->value[0] = v[0];
+	e->value[1] = v[1];
+	e->value[2] = v[2];
+	e->value[3] = v[3];
 }
 
 FILE *fp;
@@ -48,6 +69,9 @@ int *numRequests;
 
 void *schedThreadFun(void *vargp) 
 {
+	// Entry *array = (Entry*) malloc(KEY_RANGE*sizeof(Entry));
+	Entry local;
+
 	// main thread is waiting for NIC threads to finish reading file 
 	pthread_mutex_lock(&lock1);
 	ThreadArgv *argv = (ThreadArgv*)vargp;
@@ -73,37 +97,43 @@ void *schedThreadFun(void *vargp)
 	my_print(1,"nic thread %d start working\n", argv->tid);
 
 	for (int i = 0; i < numReq; i++) {
-		if (i == 0)
-			usleep(time[i]);
-		else
-			usleep(time[i]-time[i-1]);
-		struct timeval t;
-		gettimeofday(&t, NULL);
-		char buffer[32];
+		// if (i == 0)
+		// 	usleep(time[i]);
+		// else
+		// 	usleep(time[i]-time[i-1]);
+
+		// read(&array[0]);
+		// write(&array[0], "test");
+		// copy(&array[0], &local); // read
+		// copy(&local, &array[0]); // write
+
+		// struct timeval t;
+		// if (LOG_LEVEL < 1)
+		// 	gettimeofday(&t, NULL);
+		// char buffer[32] = "test";
 		switch (readWrite[i]){
 		  case 0: // readonly
-			my_print(1,"[%ld, %d] cmd: r, %ld: %s\n", t.tv_sec * (int)1e6 + t.tv_usec, argv->tid, key[i], read(key[i]));
+			// my_print(1,"[%ld, %d] cmd: r, %ld: %s\n", t.tv_sec * (int)1e6 + t.tv_usec, argv->tid, key[i], read(&array[key[i]]));
+			copy(&array[key[i]], &local); // read
 			//char *temp = read(i);
 			break;
 		  case 1: // writeonly
-			snprintf(buffer, sizeof(buffer), "%d", i);
-			my_print(1,"[%ld, %d] cmd: w, %ld: %s\n", t.tv_sec * (int)1e6 + t.tv_usec, argv->tid, key[i], buffer);
-			write(key[i], buffer);
+			// snprintf(buffer, sizeof(buffer), "%d", i);
+			// my_print(1,"[%ld, %d] cmd: w, %ld: %s\n", t.tv_sec * (int)1e6 + t.tv_usec, argv->tid, key[i], buffer);
+			// write(&array[key[i]], buffer);
+			// copy(&local, &array[key[i]]); // write
+			inc(&array[key[i]]); // inc (read and then write itself
 			break;
 		  case 2: // read and then write
 			//char *temp = read(i);
-			snprintf(buffer, sizeof(buffer), "%d", i);
-			my_print(1,"[%ld, %d] cmd: rw, %ld: %s -> %s\n", t.tv_sec * (int)1e6 + t.tv_usec, argv->tid, key[i], read(key[i]), buffer);
-			write(key[i], buffer);
+			// snprintf(buffer, sizeof(buffer), "%d", i);
+			// my_print(1,"[%ld, %d] cmd: rw, %ld: %s -> %s\n", t.tv_sec * (int)1e6 + t.tv_usec, argv->tid, key[i], read(&array[key[i]]), buffer);
+			// write(&array[key[i]], buffer);
+			copy(&array[key[i]], &local); // read
+			copy(&local, &array[key[i]]); // write
 			break;
 		  default:
 			break;
-		}
-		if (readWrite == 0) {
-
-		}
-		if (WRITE) {
-
 		}
 	}
 
@@ -154,55 +184,53 @@ void *schedThreadFun(void *vargp)
 //	}
 }
 
-void *myThreadFun(void *vargp) 
-{ 
-	ThreadArgv *argv = (ThreadArgv*)vargp;
-	int start, end;
-	if (SHARDED) {
-		start = argv->tid*SEPERATE; // TODO access pattern
-		end = start + TEST_RANGE;
-	} else {
-		start = 0;
-		end = TEST_RANGE;
-	}
-	for (int j = 0; j < TEST_REPEAT; j++) {
-		for (int i = start; i < end; i+=INTERVAL){
-			if (READ) {
-				//my_print(1,"%d: %s\n", i, read(i));
-				char *temp = read(i);
-			}
-			if (WRITE) {
-				char buffer[32];
-				snprintf(buffer, sizeof(buffer), "%d", i);
-				write(i, buffer);
-			}
-		}
-	}
-	my_print(1,"thread: %d, before free\n", argv->tid);
-	free(argv);
-	my_print(1,"after free\n");
-	return NULL; 
-} 
+//void *myThreadFun(void *vargp) 
+//{ 
+//	ThreadArgv *argv = (ThreadArgv*)vargp;
+//	int start, end;
+//	if (SHARDED) {
+//		start = argv->tid*SEPERATE; // TODO access pattern
+//		end = start + TEST_RANGE;
+//	} else {
+//		start = 0;
+//		end = TEST_RANGE;
+//	}
+//	for (int j = 0; j < TEST_REPEAT; j++) {
+//		for (int i = start; i < end; i+=INTERVAL){
+//			if (READ) {
+//				//my_print(1,"%d: %s\n", i, read(i));
+//				char *temp = read(i);
+//			}
+//			if (WRITE) {
+//				char buffer[32];
+//				snprintf(buffer, sizeof(buffer), "%d", i);
+//				write(i, buffer);
+//			}
+//		}
+//	}
+//	my_print(1,"thread: %d, before free\n", argv->tid);
+//	free(argv);
+//	my_print(1,"after free\n");
+//	return NULL; 
+//} 
 int main(int argc, char **argv) 
-{ 
-	pthread_t thread_id[NIC_NUM]; 
-
+{
 	array = (Entry*) malloc(KEY_RANGE*sizeof(Entry));
-
 	if (array == NULL) {
-		my_print(1,"Malloc fail, errno: %d\n", errno);
+		my_print(10,"Malloc fail, errno: %d\n", errno);
 		exit(-1);
 	}
-	fp = fopen(argv[1], "r");
 
+	fp = fopen(argv[1], "r");
 	int numThread;
 	fscanf(fp, "%d", &numThread);
+	pthread_t *thread_id = (pthread_t*) malloc (sizeof(pthread_t)*numThread);
 	numRequests = (int*) malloc(sizeof(int)*numThread);
 	for (int i = 0; i < numThread; i++) {
 		fscanf(fp, "%d", &(numRequests[i]));
 	}
 	int num_cores = sysconf(_SC_NPROCESSORS_ONLN);
-	my_print(1,"Number cores: %d\n", num_cores);
+	my_print(2,"Number cores: %d\n", num_cores);
 	
 	cpu_set_t cpuset;
 	CPU_ZERO(&cpuset);
@@ -237,7 +265,7 @@ int main(int argc, char **argv)
 	start_time = t.tv_sec * (int)1e6 + t.tv_usec;
 	my_print(2,"start_time: %ld\n", start_time);
 
-	for (int i = 0; i < NIC_NUM; i++) {
+	for (int i = 0; i < numThread; i++) {
 		pthread_join(thread_id[i], NULL);
 	}
 	my_print(1,"After Thread\n"); 
