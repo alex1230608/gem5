@@ -212,6 +212,12 @@ def addCommonOptions(parser):
                       (if not set, use the default prefetcher of
                       the selected cache)""")
     parser.add_option("--checker", action="store_true");
+    parser.add_option("--heter-cpu-clock", action="store", type=int,
+                      default=0,
+                      help="flag for enabling heterogeneous cpu speed")
+    parser.add_option("--clk-separate", action="store", type=int, default=None)
+    parser.add_option("--clk-type-count", action="store", type=int, default=None)
+    parser.add_option("--heter-num-core", action="store", type=int, default=None)
     parser.add_option("--cpu-clock", action="store", type="string",
                       default='2GHz',
                       help="Clock for blocks running at CPU speed")

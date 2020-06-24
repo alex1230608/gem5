@@ -40,13 +40,17 @@ class TruncatedZipf(DiscreteDist):
 		return self._alpha
 
 def main():
-	distr = TruncatedZipf(0.99, 100)
-	counter = [0] * 100
+	MAX=32768
+	distr = TruncatedZipf(0.99, MAX)
+	pdf = distr.pdf
+	counter = [0] * MAX
 	for i in range(0, 10000):
 		idx = distr.rv()-1
 		counter[idx] = counter[idx]+1
-	for i in range(0, 100):
+	for i in range(0, MAX):
 		print ("%d: %d"%(i, counter[i]))
+	for i in range(0, 10):
+		print ("%d: %f"%(i, pdf[i]))
 
 if __name__ == "__main__":
     main()

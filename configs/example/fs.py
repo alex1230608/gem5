@@ -125,9 +125,34 @@ def build_test_system(np):
     test_sys.cpu_voltage_domain = VoltageDomain()
 
     # Create a source clock for the CPUs and set the clock period
-    test_sys.cpu_clk_domain = SrcClockDomain(clock = options.cpu_clock,
-                                             voltage_domain =
-                                             test_sys.cpu_voltage_domain)
+    if options.heter_cpu_clock == 1:
+        if options.cpu_clock[-3:] != "MHz":
+            print ("Only MHz is supported for heterogeneous clock")
+            exit()
+        if options.clk_separate is None or options.clk_type_count is None:
+            print ("clk_type_count, clk_separate should be provided for heterogeneous clock")
+            exit()
+        if options.clk_type_count % 2 != 0:
+            print ("clk_type_count should be even number")
+            exit()
+        int_middle_clk = int(options.cpu_clock[:-3])
+        start = int_middle_clk - (options.clk_type_count-1)*options.clk_separate/2
+        step = options.clk_separate
+        stop = int_middle_clk + (options.clk_type_count-1)*options.clk_separate/2 + 1
+        cpu_clocks = range(start, stop, step)
+        test_sys.cpu_clk_domain = SrcClockDomain(clock = options.cpu_clock,
+                                                 voltage_domain =
+                                                 test_sys.cpu_voltage_domain)
+        cpu_clk_domains = [test_sys.cpu_clk_domain] # general-purpose cpu is in the same clock domain as l2 cache
+        for cpu_clock in cpu_clocks:
+            str_cpu_clock = "%dMHz"%cpu_clock
+            cpu_clk_domains.append( SrcClockDomain(clock = str_cpu_clock,
+                                                     voltage_domain =
+                                                     test_sys.cpu_voltage_domain) )
+    else:
+        test_sys.cpu_clk_domain = SrcClockDomain(clock = options.cpu_clock,
+                                                 voltage_domain =
+                                                 test_sys.cpu_voltage_domain)
 
     if options.kernel is not None:
         test_sys.kernel = binary(options.kernel)
@@ -143,15 +168,22 @@ def build_test_system(np):
 
     test_sys.init_param = options.init_param
 
-    # For now, assign all the CPUs to the same clock domain
-    test_sys.cpu = [TestCPUClass(clk_domain=test_sys.cpu_clk_domain, cpu_id=i)
-                    for i in range(np)]
+    if options.heter_cpu_clock == 1:
+        test_sys.cpu = [TestCPUClass(clk_domain=cpu_clk_domains[0 if i == 0 else (i-1)%options.clk_type_count+1], cpu_id=i)
+                        for i in range(np)]
+    else:
+        # For now, assign all the CPUs to the same clock domain
+        test_sys.cpu = [TestCPUClass(clk_domain=test_sys.cpu_clk_domain, cpu_id=i)
+                        for i in range(np)]
 
     if ObjectList.is_kvm_cpu(TestCPUClass) or \
         ObjectList.is_kvm_cpu(FutureClass):
         test_sys.kvm_vm = KvmVM()
 
     if options.ruby:
+        if options.heter_cpu_clock == 1:
+            print ("Ruby hasn't supported heterogeneous cpu speed yet\n")
+            exit()
         bootmem = getattr(test_sys, '_bootmem', None)
         Ruby.create_system(options, True, test_sys, test_sys.iobus,
                            test_sys._dma_ports, bootmem)
